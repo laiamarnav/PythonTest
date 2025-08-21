@@ -1,5 +1,5 @@
 import tempfile, os
-from src.nuget_scanner import check_packages_config
+from checks.legacy_config_check import check_packages_config
 
 def test_blocked_package_detected():
     xml = """<?xml version="1.0" encoding="utf-8"?>

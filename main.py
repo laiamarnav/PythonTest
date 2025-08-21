@@ -1,33 +1,23 @@
-import argparse, os, sys
-from src.logger import log, get_summary
-from src.config_loader import load_blocked_packages
-from src.whitelist_loader import load_whitelist_data
-from src.nuget_scanner import run_dotnet_restore, check_all_projects
+import argparse
+import sys
+from services.scanner_service import run_nuget_validation
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--working-dir", required=True)
-    parser.add_argument("--blocked", default="settings/blocked_packages.json")
-    parser.add_argument("--whitelist", required=True)
-    parser.add_argument("--tag-pr", default="")
+    parser = argparse.ArgumentParser(description="NuGet packages validator")
+    parser.add_argument("--working-dir", required=True, help="Directorio del proyecto a validar")
+    parser.add_argument("--blocked", default="settings/blocked_packages.json", help="Ruta al JSON de paquetes bloqueados")
+    parser.add_argument("--whitelist", required=True, help="Ruta al JSON de whitelist")
+    parser.add_argument("--tag-pr", default="", help="Tag del pull request (para excepciones de beta packages)")
     args = parser.parse_args()
 
-    os.chdir(args.working_dir)
-    blocked = load_blocked_packages(args.blocked)
-    wl_projects, wl_nugets = load_whitelist_data(args.whitelist)
+    success = run_nuget_validation(
+        working_dir=args.working_dir,
+        blocked_path=args.blocked,
+        whitelist_path=args.whitelist,
+        tag_pull_request=args.tag_pr
+    )
 
-    # Restaurar
-    if not run_dotnet_restore(args.working_dir):
-        sys.exit(1)
-
-    # Check
-    ok = check_all_projects(blocked, wl_projects, wl_nugets, args.tag_pr)
-
-    log("\nSUMMARY")
-    for line in get_summary():
-        log(line)
-
-    sys.exit(0 if ok else 1)
+    sys.exit(0 if success else 1)
 
 if __name__ == "__main__":
     main()

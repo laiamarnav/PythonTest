@@ -1,6 +1,6 @@
 import tempfile, os
-from src.nuget_scanner import check_packages_config
-from src.parsers import uses_packages_config
+from checks.legacy_config_check import check_packages_config
+from core.utils import uses_packages_config
 
 def make_fake_packages_config(tmpdir, packages):
     pkg_path = os.path.join(tmpdir, "packages.config")

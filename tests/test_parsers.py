@@ -1,4 +1,4 @@
-from src.parsers import version_lt
+from core.utils import version_lt
 
 def test_version_lt_basic():
     assert version_lt("1.0.0", "2.0.0")

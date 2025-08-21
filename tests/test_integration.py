@@ -1,5 +1,5 @@
 import tempfile, os
-from src.nuget_scanner import check_all_projects
+from services.scanner_service import check_all_projects
 
 def test_integration_with_blocked_package():
     with tempfile.TemporaryDirectory() as tmpdir:
