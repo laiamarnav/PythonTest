@@ -17,11 +17,13 @@ def main():
         tag_pull_request=args.tag_pr
     )
 
-    print("DEBUG lines en reporter:", reporter.lines)
+    print("DEBUG: líneas acumuladas en reporter:")
+    for line in reporter.lines:
+        print("  ", line)
     reporter.write_to_file()
     print("\nSUMMARY REPORT")
     print("-" * 60)
-    for line in reporter.lines:   # o reporter.get_lines(), según la implementación
+    for line in reporter.lines: 
         print(line)
         sys.exit(0 if success else 1)
 
