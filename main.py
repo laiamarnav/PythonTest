@@ -18,8 +18,11 @@ def main():
     )
 
     reporter.write_to_file()
-
-    sys.exit(0 if success else 1)
+    print("\nSUMMARY REPORT")
+    print("-" * 60)
+    for line in reporter.lines:   # o reporter.get_lines(), según la implementación
+        print(line)
+        sys.exit(0 if success else 1)
 
 if __name__ == "__main__":
     main()
