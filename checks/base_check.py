@@ -6,7 +6,6 @@ from core.utils import resolve_whitelist_for_project, version_lt
 
 
 class BaseCheck(ABC):
-    """Base class for dotnet package checks."""
 
     check_type: str = ""
 
@@ -29,17 +28,40 @@ class BaseCheck(ABC):
 
         output_lines = result.stdout.splitlines()
         blocked_found = False
+
         whitelist_for_project = resolve_whitelist_for_project(csproj_path, self.whitelist_projects)
         allow_all = "*" in whitelist_for_project or "*" in self.whitelist_nugets
+        project_label = csproj_path
 
-        for line in output_lines:
-            if not line.strip().startswith("> "):
+        is_solution = csproj_path.lower().endswith(".sln")
+        current_project_name = None 
+
+        for raw in output_lines:
+            line = raw.strip()
+
+            if is_solution and line.lower().startswith("project '"):
+                try:
+                    start = line.index("'") + 1
+                    end = line.index("'", start)
+                    current_project_name = line[start:end]
+                    project_label = current_project_name
+                    whitelist_for_project = resolve_whitelist_for_project(f"{current_project_name}.csproj", self.whitelist_projects)
+                    allow_all = "*" in whitelist_for_project or "*" in self.whitelist_nugets
+                except ValueError:
+                    pass
                 continue
-            parts = line.strip().split()
+
+            if not line.startswith("> "):
+                continue
+
+            parts = line.split()
             if len(parts) < 4:
                 continue
+
             package_name = parts[1].lower()
             installed_version = parts[2]
+
+            prefix = f"[{self.check_type}][{project_label}]"
 
             if "-beta" in installed_version:
                 is_whitelisted_beta = (
@@ -51,7 +73,7 @@ class BaseCheck(ABC):
                     x in self.tag_pr for x in ("ephemeral", "mocked", "ephemeral_mocked")
                 ):
                     self.reporter.add(
-                        f"ERROR: Found '-beta' package '{package_name}' do not allow it."
+                        f"ERROR: {prefix} Found '-beta' package '{package_name}' do not allow it."
                     )
                     blocked_found = True
                 continue
@@ -72,19 +94,17 @@ class BaseCheck(ABC):
                         )
                         if is_whitelisted:
                             self.reporter.add(
-                                f"WARNING: Package '{package_name}' below min_version but allowed by whitelist."
+                                f"WARNING: {prefix} Package '{package_name}' below min_version but allowed by whitelist."
                             )
                             continue
                         self.reporter.add(
-                            f"ERROR: Package '{package_name}' has version '{installed_version}' "
-                            f"which is lower than the allowed '{matched_block_rule['min_version']}' in {csproj_path}."
+                            f"ERROR: {prefix} Package '{package_name}' has version '{installed_version}' "
+                            f"which is lower than the allowed '{matched_block_rule['min_version']}'."
                         )
                         blocked_found = True
                         continue
 
-                if "all" in matched_block_rule.get("block_on", []) or self.check_type in matched_block_rule.get(
-                    "block_on", []
-                ):
+                if "all" in matched_block_rule.get("block_on", []) or self.check_type in matched_block_rule.get("block_on", []):
                     is_whitelisted = (
                         any(fnmatch.fnmatch(package_name, wl) for wl in whitelist_for_project)
                         or any(fnmatch.fnmatch(package_name, wl) for wl in self.whitelist_nugets)
@@ -92,11 +112,11 @@ class BaseCheck(ABC):
                     )
                     if is_whitelisted:
                         self.reporter.add(
-                            f"WARNING: Package '{package_name}' would be blocked but is allowed by whitelist."
+                            f"WARNING: {prefix} Package '{package_name}' would be blocked but is allowed by whitelist."
                         )
                         continue
                     self.reporter.add(
-                        f"ERROR: Found blocked package '{package_name}' in {csproj_path}."
+                        f"ERROR: {prefix} Found blocked package '{package_name}'."
                     )
                     blocked_found = True
                     continue
