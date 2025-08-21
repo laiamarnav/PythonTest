@@ -8,7 +8,6 @@ from core.utils import (
     uses_packages_config,
     web_targets_present,
 )
-from reports.log_writer import LogWriter
 from reports.summary_reporter import SummaryReporter
 from services.dotnet_runner import DotnetRunner
 from services.project_discovery import find_csproj_files, find_sln_files
@@ -72,7 +71,7 @@ def run_nuget_validation(working_dir, blocked_path, whitelist_path, tag_pull_req
         csprojs = find_csproj_files()
         if not csprojs:
             reporter.add("No .csproj files found to restore. Exiting...")
-            LogWriter("nugets.log").write(reporter.lines)
+            reporter.write_to_file()
             return True
         for csproj in csprojs:
             if not runner.restore(csproj):
@@ -80,12 +79,12 @@ def run_nuget_validation(working_dir, blocked_path, whitelist_path, tag_pull_req
 
     if not restored_ok:
         reporter.add("ERROR: Restore failed. Aborting package checks.")
-        LogWriter("nugets.log").write(reporter.lines)
+        reporter.write_to_file()
         return False
 
     success = check_all_projects(
         blocked_packages, whitelist_projects, whitelist_nugets, tag_pull_request, runner, reporter
     )
 
-    LogWriter("nugets.log").write(reporter.lines)
+    reporter.write_to_file()
     return success and not reporter.has_errors()
