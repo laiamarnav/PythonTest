@@ -1,4 +1,6 @@
 class Logger:
+    """Simple console logger with color support."""
+
     ANSI = {
         "BOLD_RED": "\033[1;31m",
         "BOLD_YELLOW": "\033[1;33m",

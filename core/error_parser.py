@@ -3,6 +3,11 @@ from typing import Tuple
 
 
 def parse_dotnet_error(stderr: str, csproj_path: str) -> Tuple[str, str, bool]:
+    """Interpret common dotnet CLI errors.
+
+    Returns a tuple (severity, message, skip_ok) where ``skip_ok`` indicates
+    whether the project can be skipped without failing the scan.
+    """
     s = (stderr or "").lower()
 
     if "no assets file was found" in s:
