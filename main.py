@@ -10,12 +10,14 @@ def main():
     parser.add_argument("--tag-pr", default="", help="Tag del pull request (para excepciones de beta packages)")
     args = parser.parse_args()
 
-    success = run_nuget_validation(
+    success, reporter = run_nuget_validation(
         working_dir=args.working_dir,
         blocked_path=args.blocked,
         whitelist_path=args.whitelist,
         tag_pull_request=args.tag_pr
     )
+
+    reporter.write_to_file()
 
     sys.exit(0 if success else 1)
 
