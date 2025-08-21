@@ -87,4 +87,4 @@ def run_nuget_validation(working_dir, blocked_path, whitelist_path, tag_pull_req
     )
 
     reporter.write_to_file()
-    return success and not reporter.has_errors()
+    return success and not reporter.has_errors(), reporter
