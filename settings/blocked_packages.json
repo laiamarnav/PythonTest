@@ -2,7 +2,7 @@
   "blocked_packages": [
     {
       "name": "Serilog*",
-      "block_on": ["outdated"]
+      "block_on": ["all"]
     }
   ]
 }
