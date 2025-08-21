@@ -17,15 +17,23 @@ def main():
         tag_pull_request=args.tag_pr
     )
 
-    print("DEBUG: líneas acumuladas en reporter:")
-    for line in reporter.lines:
-        print("  ", line)
     reporter.write_to_file()
+
     print("\nSUMMARY REPORT")
     print("-" * 60)
-    for line in reporter.lines: 
-        print(line)
-        sys.exit(0 if success else 1)
+    if reporter.lines:
+        for line in reporter.lines:
+            print(line)
+    else:
+        print("No blocked packages or issues found.")
+
+    if hasattr(reporter, "has_errors") and reporter.has_errors():
+        sys.exit(1)
+    elif hasattr(reporter, "has_warnings") and reporter.has_warnings():
+        print("##vso[task.complete result=SucceededWithIssues;]Warnings found in package checks.")
+        sys.exit(0)
+    else:
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()
