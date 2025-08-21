@@ -1,4 +1,6 @@
 import fnmatch
+import os
+import re
 from abc import ABC
 
 from core.error_parser import parse_dotnet_error
@@ -6,6 +8,7 @@ from core.utils import resolve_whitelist_for_project, version_lt
 
 
 class BaseCheck(ABC):
+    """Base class for dotnet package checks."""
 
     check_type: str = ""
 
@@ -17,10 +20,41 @@ class BaseCheck(ABC):
         self.reporter = reporter
         self.tag_pr = tag_pr
 
-    def run(self, csproj_path: str) -> bool:
-        result = self.runner.list_packages(csproj_path, self.check_type)
+
+    _RE_HEADER = re.compile(
+        r"""^(?:The\ given\ project|Project)\s+   
+            (?:`([^`]+)`|\'([^\']+)\'|\"([^\"]+)\"|([^\s].*?\.csproj)) 
+            \b""",
+        re.IGNORECASE | re.VERBOSE,
+    )
+
+    def _parse_project_from_header(self, line: str):
+        """
+        Extrae (label, csproj_for_whitelist) de una cabecera de proyecto.
+        - label: para mostrar en logs
+        - csproj_for_whitelist: nombre de .csproj para resolver whitelist
+        """
+        m = self._RE_HEADER.match(line.strip())
+        if not m:
+            return None, None
+
+        name = next((g for g in m.groups() if g), None)
+        if not name:
+            return None, None
+
+        if name.lower().endswith(".csproj"):
+            csproj = os.path.basename(name)
+            label = os.path.splitext(csproj)[0]  
+            return label, csproj
+
+        label = name
+        csproj = f"{name}.csproj"
+        return label, csproj
+
+    def run(self, csproj_or_sln_path: str) -> bool:
+        result = self.runner.list_packages(csproj_or_sln_path, self.check_type)
         if result.returncode != 0:
-            sev, msg, skip_ok = parse_dotnet_error(result.stderr, csproj_path)
+            sev, msg, skip_ok = parse_dotnet_error(result.stderr, csproj_or_sln_path)
             self.reporter.add(f"{sev}: {msg}")
             if result.stderr:
                 self.runner.logger.error(f"[dotnet stderr]\n{result.stderr}")
@@ -29,27 +63,25 @@ class BaseCheck(ABC):
         output_lines = result.stdout.splitlines()
         blocked_found = False
 
-        whitelist_for_project = resolve_whitelist_for_project(csproj_path, self.whitelist_projects)
+        whitelist_for_project = resolve_whitelist_for_project(csproj_or_sln_path, self.whitelist_projects)
         allow_all = "*" in whitelist_for_project or "*" in self.whitelist_nugets
-        project_label = csproj_path
+        project_label = os.path.splitext(os.path.basename(csproj_or_sln_path))[0]
 
-        is_solution = csproj_path.lower().endswith(".sln")
-        current_project_name = None 
+        is_solution = csproj_or_sln_path.lower().endswith(".sln")
+        current_project_label = None
+        current_csproj_for_whitelist = None
 
         for raw in output_lines:
             line = raw.strip()
 
-            if is_solution and line.lower().startswith("project '"):
-                try:
-                    start = line.index("'") + 1
-                    end = line.index("'", start)
-                    current_project_name = line[start:end]
-                    project_label = current_project_name
-                    whitelist_for_project = resolve_whitelist_for_project(f"{current_project_name}.csproj", self.whitelist_projects)
+            if is_solution:
+                plabel, pcsproj = self._parse_project_from_header(line)
+                if plabel:
+                    current_project_label = plabel
+                    current_csproj_for_whitelist = pcsproj
+                    whitelist_for_project = resolve_whitelist_for_project(current_csproj_for_whitelist, self.whitelist_projects)
                     allow_all = "*" in whitelist_for_project or "*" in self.whitelist_nugets
-                except ValueError:
-                    pass
-                continue
+                    continue  
 
             if not line.startswith("> "):
                 continue
@@ -61,8 +93,10 @@ class BaseCheck(ABC):
             package_name = parts[1].lower()
             installed_version = parts[2]
 
-            prefix = f"[{self.check_type}][{project_label}]"
+            proj_for_log = (current_project_label if is_solution and current_project_label else project_label)
+            prefix = f"[{self.check_type}][{proj_for_log}]"
 
+     
             if "-beta" in installed_version:
                 is_whitelisted_beta = (
                     any(fnmatch.fnmatch(package_name, wl) for wl in whitelist_for_project)
@@ -85,6 +119,7 @@ class BaseCheck(ABC):
                     break
 
             if matched_block_rule:
+    
                 if matched_block_rule.get("min_version"):
                     if version_lt(installed_version, matched_block_rule["min_version"]):
                         is_whitelisted = (
