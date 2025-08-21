@@ -1,6 +1,6 @@
 import os
 import subprocess
-from typing import List
+from typing import List, Optional
 
 from core.logger import Logger
 
@@ -11,7 +11,7 @@ NUGET_SOURCES = [
 
 
 class DotnetRunner:
-    def __init__(self, sources: List[str] | None = None, logger: Logger | None = None):
+    def __init__(self, sources: List[str] = None, logger: Logger = None):
         self.sources = sources or NUGET_SOURCES
         self.logger = logger or Logger()
 
