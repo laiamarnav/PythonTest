@@ -17,6 +17,7 @@ def main():
         tag_pull_request=args.tag_pr
     )
 
+    print("DEBUG lines en reporter:", reporter.lines)
     reporter.write_to_file()
     print("\nSUMMARY REPORT")
     print("-" * 60)
