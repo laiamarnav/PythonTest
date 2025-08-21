@@ -1,7 +1,7 @@
 {
   "blocked_packages": [
     {
-      "name": "Serilog*",
+      "name": "azure.identity",
       "block_on": ["all"]
     }
   ]
