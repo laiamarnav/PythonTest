@@ -36,7 +36,6 @@ class DotnetRunner:
         abs_target = os.path.abspath(target_path)
         workdir = os.path.dirname(abs_target) if abs_target.lower().endswith(".sln") else None
 
-        # Orden correcto: dotnet list <TARGET> package --<check>
         cmd = ["dotnet", "list", abs_target, "package", f"--{check_type}", "--include-transitive", "--verbosity", "minimal"]
         for source in self.sources:
             cmd.extend(["--source", source])

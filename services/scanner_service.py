@@ -13,7 +13,7 @@ from reports.summary_reporter import SummaryReporter
 from services.dotnet_runner import DotnetRunner
 from services.project_discovery import find_csproj_files, find_sln_files
 from checks.legacy_config_check import check_packages_config
-from checks.checks import Check 
+from checks.checks import Check
 
 
 def _is_web_targets_error(stderr: str) -> bool:
@@ -26,7 +26,7 @@ def _is_packages_config_error(stderr: str) -> bool:
     return ("uses package.config" in s) or ("package.config" in s)
 
 
-def _run_modern_checks_by_solution(slns, blocked_packages, whitelist_projects, whitelist_nugets, tag_pr, runner, reporter) -> (bool, bool):
+def _run_modern_checks_by_solution(slns, blocked_packages, whitelist_projects, whitelist_nugets, tag_pr, runner, reporter):
     ok = True
     need_fallback = False
 
@@ -54,7 +54,7 @@ def _run_modern_checks_by_solution(slns, blocked_packages, whitelist_projects, w
     return ok, need_fallback
 
 
-def _run_legacy_for_packages_config(csprojs, blocked_packages, whitelist_projects, whitelist_nugets, tag_pr, reporter) -> bool:
+def _run_legacy_for_packages_config(csprojs, blocked_packages, whitelist_projects, whitelist_nugets, tag_pr, reporter):
     legacy_ok = True
     for csproj in csprojs:
         if uses_packages_config(csproj):
@@ -63,7 +63,7 @@ def _run_legacy_for_packages_config(csprojs, blocked_packages, whitelist_project
     return legacy_ok
 
 
-def _run_modern_checks_by_project_parallel(csprojs, blocked_packages, whitelist_projects, whitelist_nugets, tag_pr, runner, reporter) -> bool:
+def _run_modern_checks_by_project_parallel(csprojs, blocked_packages, whitelist_projects, whitelist_nugets, tag_pr, runner, reporter):
     checks = [
         Check("outdated",   runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr),
         Check("vulnerable", runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr),
