@@ -144,6 +144,17 @@ def run_nuget_validation(working_dir, blocked_path, whitelist_path, tag_pull_req
     slns = find_sln_files()
     csprojs = find_csproj_files()
 
+    all_legacy = csprojs and all(uses_packages_config(p) for p in csprojs)
+    if all_legacy:
+        msg = "Only packages.config projects detected. Running legacy checks without restore."
+        logger.info(msg)
+        reporter.add(msg)
+        legacy_ok = _run_legacy_for_packages_config(
+            csprojs, blocked_packages, whitelist_projects, whitelist_nugets, tag_pull_request, reporter
+        )
+        reporter.write_to_file()
+        return legacy_ok and not reporter.has_errors(), reporter
+
     restored_ok = True
     if slns:
         if not runner.restore(slns[0]):
