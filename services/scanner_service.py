@@ -102,6 +102,22 @@ def check_all_projects(blocked_packages, whitelist_projects, whitelist_nugets, t
     slns = find_sln_files()
     csprojs = find_csproj_files()
 
+    # If all detected projects rely on packages.config, skip modern checks
+    # and run only the legacy packages.config validation. This avoids issuing
+    # any `dotnet list package` calls which would fail for these projects.
+    if csprojs and all(uses_packages_config(p) for p in csprojs):
+        reporter.add(
+            "Only packages.config projects detected. Skipping dotnet list package calls."
+        )
+        return _run_legacy_for_packages_config(
+            csprojs,
+            blocked_packages,
+            whitelist_projects,
+            whitelist_nugets,
+            tag_pr,
+            reporter,
+        )
+
     if slns:
         ok_sln, need_fallback = _run_modern_checks_by_solution(
             slns, blocked_packages, whitelist_projects, whitelist_nugets, tag_pr, runner, reporter
