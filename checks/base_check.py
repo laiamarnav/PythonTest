@@ -6,7 +6,6 @@ from core.utils import resolve_whitelist_for_project, version_lt
 
 
 class BaseCheck(ABC):
-
     check_type: str = ""
 
     def __init__(self, runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr):
