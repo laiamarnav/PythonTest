@@ -1,7 +1,6 @@
 import os
 import subprocess
 from typing import List, Optional
-
 from core.logger import Logger
 
 NUGET_SOURCES = [
@@ -9,18 +8,21 @@ NUGET_SOURCES = [
     "https://api.nuget.org/v3/index.json",
 ]
 
-
 class DotnetRunner:
     def __init__(self, sources: List[str] = None, logger: Logger = None):
         self.sources = sources or NUGET_SOURCES
         self.logger = logger or Logger()
 
     def restore(self, target_path: str) -> bool:
-        cmd = ["dotnet", "restore", target_path]
+        abs_target = os.path.abspath(target_path)
+        workdir = os.path.dirname(abs_target) if abs_target.lower().endswith(".sln") else None
+
+        cmd = ["dotnet", "restore", abs_target]
         for source in self.sources:
             cmd.extend(["--source", source])
-        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="ignore")
-        self.logger.info(f"\n[RESTORE] {os.path.abspath(target_path)}")
+
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="ignore", cwd=workdir)
+        self.logger.info(f"\n[RESTORE] {abs_target}")
         if r.stdout:
             self.logger.info(r.stdout)
         if r.returncode != 0:
@@ -30,14 +32,21 @@ class DotnetRunner:
             return False
         return True
 
-    def list_packages(self, csproj_path: str, check_type: str):
-        cmd = ["dotnet", "list", csproj_path, "package", f"--{check_type}", "--include-transitive"]
+    def list_packages(self, target_path: str, check_type: str):
+        abs_target = os.path.abspath(target_path)
+        workdir = os.path.dirname(abs_target) if abs_target.lower().endswith(".sln") else None
+
+        # Orden correcto: dotnet list <TARGET> package --<check>
+        cmd = ["dotnet", "list", abs_target, "package", f"--{check_type}", "--include-transitive", "--verbosity", "minimal"]
         for source in self.sources:
             cmd.extend(["--source", source])
-        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="ignore")
+
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="ignore", cwd=workdir)
+
         self.logger.info(f"\n [{check_type.upper()} PACKAGES] ")
         self.logger.info("-" * 60)
-        self.logger.info(f"\nChecking packages for {os.path.abspath(csproj_path)}")
+        self.logger.info(f"\nChecking packages for {abs_target}")
         if result.stdout:
             self.logger.info(result.stdout)
+
         return result

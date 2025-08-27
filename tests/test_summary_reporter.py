@@ -32,7 +32,7 @@ def test_add_accumulates_and_logs():
 
 def test_write_to_file_with_lines(tmp_path):
     reporter = SummaryReporter()
-    reporter.add("ERROR: boom")
+    reporter.add("ERROR: ")
     reporter.add("all good")
     file_path = tmp_path / "nugets.log"
     reporter.write_to_file(str(file_path))

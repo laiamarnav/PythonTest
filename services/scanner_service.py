@@ -13,9 +13,7 @@ from reports.summary_reporter import SummaryReporter
 from services.dotnet_runner import DotnetRunner
 from services.project_discovery import find_csproj_files, find_sln_files
 from checks.legacy_config_check import check_packages_config
-from checks.vulnerable_check import VulnerableCheck
-from checks.outdated_check import OutdatedCheck
-from checks.deprecated_check import DeprecatedCheck
+from checks.checks import Check
 
 
 def check_all_projects(blocked_packages, whitelist_projects, whitelist_nugets, tag_pr, runner=None, reporter=None):
@@ -26,9 +24,9 @@ def check_all_projects(blocked_packages, whitelist_projects, whitelist_nugets, t
     if slns:
         ok = True
         checks = [
-            OutdatedCheck(runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr),
-            VulnerableCheck(runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr),
-            DeprecatedCheck(runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr),
+            Check("outdated",   runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr),
+            Check("vulnerable", runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr),
+            Check("deprecated", runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr),
         ]
         for sln in slns:
             for check in checks:
@@ -42,9 +40,9 @@ def check_all_projects(blocked_packages, whitelist_projects, whitelist_nugets, t
         return True
 
     checks = [
-        OutdatedCheck(runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr),
-        VulnerableCheck(runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr),
-        DeprecatedCheck(runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr),
+        Check("outdated",   runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr),
+        Check("vulnerable", runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr),
+        Check("deprecated", runner, blocked_packages, whitelist_projects, whitelist_nugets, reporter, tag_pr),
     ]
 
     def run_all_checks_for_project(csproj: str) -> bool:
