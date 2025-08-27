@@ -1,0 +1,8 @@
+{
+  "blocked_packages": [
+    {
+      "name": "azure.identity",
+      "block_on": ["all"]
+    }
+  ]
+}
